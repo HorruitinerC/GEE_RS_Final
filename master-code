@@ -1,0 +1,212 @@
+# GEE_RS_Final
+# 14 import entries that could be converted to import statements.
+///////////////////////LANDSAT 8 EXPLORATION//////////////////
+
+var start = ee.Date('2015-05-01');
+var finish = ee.Date('2015-08-01');
+
+var stordalenLeastCloudy = ee.ImageCollection('LANDSAT/LC08/C01/T1_TOA')
+.filterBounds(roi)
+.filterDate(start,finish)
+.sort('CLOUD_COVER', false);
+
+print('stordalenLeastCloudy', stordalenLeastCloudy);
+
+var count = stordalenLeastCloudy.size();
+print('Size of LS8 cloud-free Stordalen ImageCollection - Summer2015', count);
+//2015-05-10
+
+var leastCloudy1 = ee.Image(stordalenLeastCloudy.sort('CLOUD_COVER').first());
+print('First least cloudy LS Summer 2015', leastCloudy1);
+//CLOUD_COVER = 4,74%
+//Map.addLayer(leastCloudy1, vizzy, 'leastCloudy1');
+
+var leastCloudy2 = ee.Image('LANDSAT/LC08/C01/T1_TOA/LC08_195012_20150713');
+print('Second least cloudy LS Summer 2015', leastCloudy2);
+//CLOUD_COVER = 5.19%
+//2015.07.13
+//Map.addLayer(leastCloudy2, vizzy, 'leastCloudy2');
+
+var date = leastCloudy1.get('DATE_ACQUIRED');
+print('Date of leastcloudy image LS8', date);
+//5.10.2015
+
+// Define visualization parameters. 
+
+//var trueColor = { bands: ['B4', 'B3', 'B2'], min: 4000, max: 12000 };
+//Map.addLayer(leastcloudy, trueColor, 'true-color image');
+//Looks best at a 90% stretch; why no color?
+
+///////////////////////////////LS8 t1/////////////////////////////////
+
+var ls82015t1 = leastCloudy1.select([9]);
+print('ls82015t1', ls82015t1);
+//5.11.2015
+Map.addLayer(ls82015t1, vizzy, 'ls82015t1');
+
+///////////////////////////////LS8 t2////////////////////////////////
+
+var ls82015t2 = leastCloudy2.select([9]);
+print('ls82015t2', ls82015t2);
+//6.12.2015
+Map.addLayer(ls82015t2, vizzy2, 'ls82015t2');
+
+//////////////////////GSWM EXPLORATION//////////////////////
+
+//Map.addLayer(gswm, {}, 'gswm');
+
+////////////////////////////// MOD t1 ////////////////////////////////
+
+var mod2015t1 = ee.ImageCollection('MODIS/MOD11A2')
+    .filterDate('2015-05-09', '2015-05-16')
+    .select(0);
+//05.09.2015
+
+mod2015t1 = ee.Image(mod2015t1.first());
+print('mod2015t1 image', mod2015t1);
+// cast it as an image and multiplied each pixel by the scale factor; now your pixels are in Kelvin
+var mod2015t1scaled = mod2015t1.multiply(0.02).subtract(273.15); // <-- this makes it Celcius
+
+print(mod2015t1, 'modt1');
+print(mod2015t1scaled, 'modt1 scaled');
+//Map.addLayer(mod2015t1, visParam, 'modt1');
+//Map.addLayer(mod2015t1scaled, visParam, 'modt1 scaled');
+////////////////////////////// MOD t2 /////////////////////////////////
+
+
+var mod2015t2 = ee.ImageCollection('MODIS/MOD11A2')
+    .filterDate('2015-05-17', '2015-05-24')
+    .select(0);
+//05.17.2015
+
+mod2015t2 = ee.Image(mod2015t2.first());
+print('mod2015t2 image', mod2015t2);
+// cast it as an image and multiplied each pixel by the scale factor; now your pixels are in Kelvin
+var mod2015t2scaled = mod2015t2.multiply(0.02).subtract(273.15); // <-- this makes it Celcius
+
+print(mod2015t2, 'modt2');
+print(mod2015t2scaled, 'modt2 scaled');
+//Map.addLayer(mod2015t2, visParam, 'modt2');
+//Map.addLayer(mod2015t2scaled, visParam, 'modt2 scaled');
+
+///////////////////////////MODIS 2015 TIMESERIES//////////////////////////
+
+/*
+
+var mod2015ts = ee.ImageCollection(mod11a2)
+    .filterDate('2015-01-01', '2015-12-31')
+    .select(0);
+
+// Create an image time series chart.
+var chart = ui.Chart.image.series({
+  imageCollection: mod2015ts,
+  region: roi,
+  reducer: ee.Reducer.mean(),
+  scale: 200
+});
+
+// Add the chart to the map.
+chart.style().set({
+  position: 'bottom-right',
+  width: '250px',
+  height: '150px'
+});
+Map.add(chart);
+
+
+// Outline and center Stordalen on the map.
+var stordalenBounds = ui.Map.Layer(roi, {color: '0000FF'}, 'Stordalen bounds');
+Map.layers().add(stordalenBounds);
+Map.setCenter(19.07501220703125,68.3593744332589, 9);
+
+// Create a label on the map.
+var label = ui.Label('Click a point on the chart to show the image for that date.');
+Map.add(label);
+
+// When the chart is clicked, update the map and label.
+chart.onClick(function(xValue, yValue, seriesName) {
+  if (!xValue) return;  // Selection was cleared.
+
+  // Show the image for the clicked date.
+  var equalDate = ee.Filter.equals('system:time_start', xValue);
+  var image = ee.Image(mod2015ts.filter(equalDate).first());
+  var modLayer = ui.Map.Layer(image, {
+    gamma: 1.3,
+    min: 0,
+    max: 0.3,
+    bands: ['LST_Day_1km']
+  });
+Map.layers().reset([modLayer, stordalenBounds]);
+
+  // Show a label with the date on the map.
+  label.setValue((new Date(xValue)).toUTCString());
+});
+*/
+///////////////////////COMBINING MODIS IMAGES/////////////////////
+//var bothmod = mod2015t1.addBands(ee.Image(mod2015t2.first)).select([0,1],['t1','t2']);
+
+var bothmod = mod2015t1scaled.addBands(ee.Image(mod2015t2scaled)).select([0,1],['t1','t2']);
+Map.addLayer(bothmod,{},'bothmod');
+print('bothmod', bothmod);
+
+
+////////////////////////IMAGE TO ARRAY///////////////////////////
+
+var array = bothmod.reduceRegion(ee.Reducer.toList(), roi).toArray;
+print('array', array);
+
+var geom = roi; 
+
+var myArray = bothmod.reduceRegion(ee.Reducer.toList(), geom)
+  .toArray(bothmod.bandNames());
+  
+var x = myArray.slice(0,1); //for the y-axis
+var y = myArray.slice(0,0,1).project([1]);
+
+//var array2 = mod2015t1.reduceRegions(ee.Reducer.toList(),roi).toArray;
+//var array3 = mod2015t2.reduceRegions(ee.Reducer.toList(),roi).toArray;
+
+//var arrayImaget1 = mod2015t2.toArray();
+//var arrayImaget2 = mod2015t2.toArray();
+
+//print('arrayImage1D', arrayImage1D);
+//Map.addLayer(arrayImage1D, {}, 'arrayImage1D');
+
+//print('arrayImaget1', arrayImaget1);
+//print('arrayImaget2', arrayImaget2);
+
+//var xVals = array2.arrayGet(0);
+//var yVals = array.slice(1);
+
+//print('xVals', xVals);
+//print('yVals', yVals);
+
+
+///////////////////CHART ARRAY//////////////////////
+
+var chart = ui.Chart.array.values(x, 1, y)
+    .setSeriesNames(['temp'])
+    .setOptions({
+      title: 'MODIS LST',
+      hAxis: {'title': 'MOD11A2_005_2015_05_09'},
+      vAxis: {'title': 'MOD11A2_005_2015_05_17'},
+      pointSize: 2,
+      trendlines: { 0: {} }
+});
+
+print(chart);
+
+//////////////////////////// LINEARITY CHECK ////////////////////////////////.
+
+var pears = bothmod.reduceRegion(ee.Reducer.pearsonsCorrelation(), geom);
+print('pears', pears);
+
+var linRegression = bothmod.reduceRegion(ee.Reducer.linearRegression(1,1), geom);
+print('linRegression', linRegression);
+
+///////////////////////////SYNTHETIC IMAGE///////////////////////////
+
+var synthImage = ls82015t1.multiply(0.375).add(2.895);
+print('synthImage', synthImage);
+Map.addLayer(synthImage, vizzy3, 'synthImage');
+
